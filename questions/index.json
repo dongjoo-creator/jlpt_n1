@@ -1,3 +1,13 @@
 {
-  "files": ["vocab.json", "grammar.json", "reading.json"]
+  "files": [
+    "vocab.json",
+    "grammar.json",
+    "reading.json",
+    "vocab-01.json",
+    "vocab-02.json",
+    "grammar-01.json",
+    "grammar-02.json",
+    "reading-01.json",
+    "reading-02.json"
+  ]
 }

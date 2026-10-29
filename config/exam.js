@@ -14,7 +14,11 @@ export const SECTIONS = {
   listening: { label: '청해', enabled: false, note: '음성 문제는 준비 중이에요' },
 };
 
-export const DAILY_GOAL_DEFAULT = 30;
+// 오늘의 문제: 영역별 문제 수. 주말은 토·일. 설정 화면에서 바꾼 값이 있으면 그 값을 쓴다.
+export const DAILY_PLAN_DEFAULT = {
+  weekday: { vocab: 20, grammar: 20, reading: 10 },
+  weekend: { vocab: 10, grammar: 10, reading: 5 },
+};
 
 export const COMPOSITION = {
   parts: [

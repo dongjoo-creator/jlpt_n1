@@ -1,12 +1,14 @@
 // 앱 상태. 시작할 때 IndexedDB에서 한 번 읽어 메모리에 두고, 바뀔 때마다 바로 저장한다.
 import { db } from './db.js';
-import { DAILY_GOAL_DEFAULT } from '../config/exam.js';
+import { DAILY_PLAN_DEFAULT } from '../config/exam.js';
+
+const defaultSettings = () => ({ dailyPlan: structuredClone(DAILY_PLAN_DEFAULT) });
 
 export const state = {
   attempts: new Map(), // 문제 id → { tries, correct, wrong, last, lastAt }
   words: new Map(), // 단어 키 → 단어장 항목
-  daily: new Map(), // 'YYYY-MM-DD' → { count }
-  settings: { dailyGoal: DAILY_GOAL_DEFAULT },
+  daily: new Map(), // 'YYYY-MM-DD' → { count, ids } (ids: 그날의 '오늘의 문제')
+  settings: defaultSettings(),
   session: null, // 지금 풀고 있는 세트
   persistent: true,
 };
@@ -27,7 +29,10 @@ export async function loadStore() {
     words.forEach((w) => state.words.set(w.key, w));
     daily.forEach((d) => state.daily.set(d.date, d));
     for (const { key, value } of kv) {
-      if (key === 'settings') Object.assign(state.settings, value);
+      // 예전 버전의 dailyGoal 같은 값은 무시하고, 아는 칸만 덮어쓴다.
+      if (key === 'settings') {
+        for (const day of ['weekday', 'weekend']) Object.assign(state.settings.dailyPlan[day], value.dailyPlan?.[day]);
+      }
       if (key === 'session') state.session = value;
     }
   } catch (err) {
@@ -39,7 +44,6 @@ export async function loadStore() {
 
 const pad = (n) => String(n).padStart(2, '0');
 export const todayKey = (d = new Date()) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-export const todayCount = () => state.daily.get(todayKey())?.count ?? 0;
 
 export function recordAnswer(q, choice) {
   const correct = choice === q.answer;
@@ -52,10 +56,17 @@ export function recordAnswer(q, choice) {
   save('attempts', a);
 
   const date = todayKey();
-  const d = { date, count: (state.daily.get(date)?.count ?? 0) + 1 };
+  const prev = state.daily.get(date);
+  const d = { ...prev, date, count: (prev?.count ?? 0) + 1 };
   state.daily.set(date, d);
   save('daily', d);
   return correct;
+}
+
+export function setDailyIds(date, ids) {
+  const d = { count: 0, ...state.daily.get(date), date, ids };
+  state.daily.set(date, d);
+  save('daily', d);
 }
 
 // 같은 표기·읽기의 단어는 한 번만 저장한다.
@@ -96,8 +107,8 @@ export function removeWord(key) {
   remove('words', key);
 }
 
-export function startSession({ title, ids, returnTo = 'home' }) {
-  state.session = { title, ids, returnTo, index: 0, answers: {}, results: {}, tabs: {}, startedAt: Date.now() };
+export function startSession({ title, ids, returnTo = 'home', daily = null }) {
+  state.session = { title, ids, returnTo, daily, index: 0, answers: {}, results: {}, tabs: {}, startedAt: Date.now() };
   saveSession();
 }
 
@@ -115,6 +126,6 @@ export async function resetAll() {
   state.words.clear();
   state.daily.clear();
   state.session = null;
-  state.settings = { dailyGoal: DAILY_GOAL_DEFAULT };
+  state.settings = defaultSettings();
   if (state.persistent) await Promise.all(db.stores.map((s) => db.clear(s)));
 }

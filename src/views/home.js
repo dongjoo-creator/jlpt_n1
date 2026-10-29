@@ -1,6 +1,9 @@
-import { state, todayCount } from '../store.js';
+import { state } from '../store.js';
 import { SECTIONS } from '../../config/exam.js';
-import { sectionStats, startSection, continueStudy, continueLabel, daysUntilExam, examDateLabel } from '../study.js';
+import {
+  sectionStats, startSection, continueStudy, continueLabel, daysUntilExam, examDateLabel,
+  dailySet, startDaily, DAILY_SECTIONS,
+} from '../study.js';
 import { icons } from '../ui/icons.js';
 import { esc, percent } from '../ui/text.js';
 
@@ -10,10 +13,10 @@ function ddayText(days) {
   return '시험 종료';
 }
 
-function ringHtml(done, goal) {
+function ringHtml(done, goal, caption) {
   const r = 44;
   const c = 2 * Math.PI * r;
-  const ratio = Math.min(done / goal, 1);
+  const ratio = goal ? Math.min(done / goal, 1) : 0;
   return `<div class="ring">
     <div class="ring-wrap">
       <svg class="ring-svg" viewBox="0 0 104 104" role="img" aria-label="오늘 목표 ${goal}문제 중 ${done}문제">
@@ -23,7 +26,7 @@ function ringHtml(done, goal) {
       </svg>
       <div class="ring-text" aria-hidden="true"><div><strong>${done}</strong><span>/ ${goal}문제</span></div></div>
     </div>
-    <span class="ring-caption">${done >= goal ? '오늘 목표 달성' : '오늘 목표'}</span>
+    <span class="ring-caption">${goal && done >= goal ? '오늘 목표 달성' : caption}</span>
   </div>`;
 }
 
@@ -49,8 +52,14 @@ function sectionCard(key, meta) {
 export default {
   render(el) {
     const days = daysUntilExam();
-    const goal = state.settings.dailyGoal;
-    const cta = continueLabel();
+    const daily = dailySet();
+    const dailyLeft = daily.total - daily.done;
+    const mix = DAILY_SECTIONS.filter((s) => daily.bySection[s])
+      .map((s) => `${SECTIONS[s].label} ${daily.bySection[s]}`).join(' · ');
+    // 오늘의 문제가 남아 있으면 그게 첫 버튼, 다 풀었으면 예전처럼 이어서 풀기/복습.
+    const cta = dailyLeft > 0
+      ? { title: daily.done ? '오늘의 문제 이어서 풀기' : '오늘의 문제 풀기', sub: `남은 ${dailyLeft}문제 · ${mix}` }
+      : continueLabel();
     el.innerHTML = `<div class="page home">
       <header class="home-head" data-anchor="head">
         <div><p class="eyebrow">JLPT N1 연습</p><h1 class="h1">오늘도 한 문제씩</h1></div>
@@ -62,7 +71,7 @@ export default {
           <strong class="dday-num">${ddayText(days)}</strong>
           <span class="dday-date">${examDateLabel()}</span>
         </div>
-        ${ringHtml(todayCount(), goal)}
+        ${ringHtml(daily.done, daily.total, daily.weekend ? '주말 목표' : '평일 목표')}
       </section>
       <div class="quick" data-anchor="quick">
         <a class="card quick-item" href="#/guide">${icons.info}<span>시험 안내<small>구성·시간·채점</small></span>${icons.chevronRight}</a>
@@ -81,7 +90,7 @@ export default {
       const btn = e.target.closest('button');
       if (!btn) return;
       if (btn.dataset.section) startSection(btn.dataset.section, { returnTo: 'home' });
-      if (btn.dataset.act === 'continue') continueStudy();
+      if (btn.dataset.act === 'continue') (dailyLeft > 0 ? startDaily : continueStudy)();
     };
     el.addEventListener('click', onClick);
     return () => el.removeEventListener('click', onClick);

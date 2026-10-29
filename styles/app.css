@@ -345,7 +345,7 @@ body[data-chrome="none"] .view { overflow: hidden; }
 .q-left { margin-bottom: 12px; }
 
 .card-label { font-size: 13px; font-weight: 700; color: var(--sub); margin-bottom: 8px; }
-.passage { font-size: 17px; line-height: 2; overflow-wrap: anywhere; }
+.passage { font-size: 17px; line-height: 2; overflow-wrap: anywhere; white-space: pre-line; }
 .wmark {
   text-decoration: underline dotted var(--accent);
   text-decoration-thickness: 2px;
