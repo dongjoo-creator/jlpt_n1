@@ -1,24 +1,10 @@
 // 통계 계산과 풀이 세트 시작. 여러 화면이 같이 쓴다.
+// 새 문제는 '오늘의 문제' 세트 안에서만 푼다. 세트 밖은 오답노트 복습뿐이다.
 import { state, startSession, todayKey, setDailyIds } from './store.js';
 import { questions } from './questions.js';
 import { SECTIONS, EXAM } from '../config/exam.js';
 import { go } from './router.js';
 import { toast } from './ui/toast.js';
-
-export function sectionStats(section) {
-  const qs = questions.bySection(section);
-  let solved = 0;
-  let tries = 0;
-  let correct = 0;
-  for (const q of qs) {
-    const a = state.attempts.get(q.id);
-    if (!a) continue;
-    solved += 1;
-    tries += a.tries;
-    correct += a.correct;
-  }
-  return { total: qs.length, solved, accuracy: tries ? correct / tries : null };
-}
 
 export function wrongEntries() {
   return [...state.attempts.values()]
@@ -29,21 +15,6 @@ export function wrongEntries() {
 export function openSession() {
   const s = state.session;
   return s && s.index < s.ids.length ? s : null;
-}
-
-const isSolved = (q) => state.attempts.has(q.id);
-const enabled = (q) => SECTIONS[q.section]?.enabled;
-
-export function startSection(section, { onlyUnsolved = false, returnTo = 'home' } = {}) {
-  const qs = questions.bySection(section);
-  const unsolved = qs.filter((q) => !isSolved(q));
-  const picked = onlyUnsolved ? unsolved : [...unsolved, ...qs.filter(isSolved)];
-  if (!picked.length) {
-    toast(onlyUnsolved ? '안 푼 문제가 없어요' : '아직 문제가 없어요');
-    return;
-  }
-  startSession({ title: SECTIONS[section].label, ids: picked.map((q) => q.id), returnTo });
-  go('quiz');
 }
 
 export function startIds(title, ids, returnTo, daily = null) {
@@ -125,29 +96,39 @@ export function refreshDailyIfUntouched() {
   if (!ids?.some(doneToday)) setDailyIds(date, buildDaily(date));
 }
 
-export function startDaily() {
+// 오늘 세트 안의 한 영역: 몇 문제 중 몇 문제를 풀었고, 푼 것 중 몇 %를 맞혔는지.
+export function dailySection(set, section) {
+  const ids = set.ids.filter((id) => questions.get(id).section === section);
+  const done = ids.filter(doneToday);
+  const correct = done.filter((id) => state.attempts.get(id).last === 'correct').length;
+  return { ids, done, left: ids.filter((id) => !doneToday(id)), accuracy: done.length ? correct / done.length : null };
+}
+
+export function startDailySection(section, { onlyLeft = false, returnTo = 'home' } = {}) {
   const set = dailySet();
-  if (openSession()?.daily === set.date) return go('quiz');
+  const { ids, done, left } = dailySection(set, section);
+  const picked = onlyLeft ? left : [...left, ...done];
+  if (!picked.length) return toast(ids.length ? '남은 문제가 없어요' : '오늘은 이 영역 문제가 없어요');
+  return startIds(`${SECTIONS[section].label} · 오늘`, picked, returnTo, set.date);
+}
+
+// 홈의 큰 버튼: 남은 오늘 문제 → 풀던 세트 이어서 → 오늘 문제 다시 풀기.
+export function mainAction(set = dailySet()) {
   const left = set.ids.filter((id) => !doneToday(id));
-  if (!left.length) return toast(set.total ? '오늘의 문제를 다 풀었어요' : '아직 문제가 없어요');
-  return startIds('오늘의 문제', left, 'home', set.date);
-}
-
-// "이어서 풀기": 풀던 세트가 있으면 그대로, 없으면 안 푼 문제부터.
-export function continueStudy() {
-  if (openSession()) return go('quiz');
-  const all = questions.all().filter(enabled);
-  const unsolved = all.filter((q) => !isSolved(q));
-  if (unsolved.length) return startIds('안 푼 문제', unsolved.map((q) => q.id), 'home');
-  return startIds('전체 복습', all.map((q) => q.id), 'home');
-}
-
-export function continueLabel() {
   const s = openSession();
-  if (s) return { title: '이어서 풀기', sub: `${s.title} ${s.index + 1}/${s.ids.length}` };
-  const unsolved = questions.all().filter((q) => enabled(q) && !isSolved(q)).length;
-  if (unsolved) return { title: '이어서 풀기', sub: `안 푼 문제 ${unsolved}개` };
-  return { title: '전체 복습하기', sub: `${questions.all().filter(enabled).length}문제` };
+  if (left.length) {
+    return {
+      title: set.done ? '오늘의 문제 이어서 풀기' : '오늘의 문제 풀기',
+      left,
+      run: () => (s?.daily === set.date ? go('quiz') : startIds('오늘의 문제', left, 'home', set.date)),
+    };
+  }
+  if (s) return { title: '이어서 풀기', sub: `${s.title} ${s.index + 1}/${s.ids.length}`, run: () => go('quiz') };
+  return {
+    title: '오늘 문제 다시 풀기',
+    sub: set.total ? `오늘 목표 달성 · ${set.total}문제` : '아직 문제가 없어요',
+    run: () => (set.total ? startIds('오늘의 문제 복습', set.ids, 'home', set.date) : toast('아직 문제가 없어요')),
+  };
 }
 
 export function daysUntilExam(now = new Date()) {

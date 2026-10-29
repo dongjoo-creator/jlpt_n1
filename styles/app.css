@@ -480,8 +480,21 @@ body[data-chrome="none"] .view { overflow: hidden; }
 .word-card { display: flex; flex-direction: column; gap: 4px; }
 .wc-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: -6px -8px 4px 0; }
 .wc-surface { font-family: var(--font-jp); font-size: 24px; font-weight: 600; line-height: 1.35; overflow-wrap: anywhere; }
-.wc-reading { font-family: var(--font-jp); color: var(--sub); font-size: 15px; }
+.wc-surface rt { font-size: 13px; font-weight: 400; color: var(--sub); }
 .wc-meaning { font-size: 15px; margin-top: 2px; }
+.wc-body { cursor: pointer; border-radius: 10px; -webkit-tap-highlight-color: transparent; }
+.wc-body:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
+.wc-example { margin-top: 8px; font-size: 15px; line-height: 1.8; color: var(--text); overflow-wrap: anywhere; }
+.wc-ex-label { display: inline-block; margin-right: 6px; padding: 0 6px; border-radius: 6px; background: var(--line); color: var(--sub); font-family: var(--font-ui); font-size: 13px; line-height: 1.6; vertical-align: 1px; }
+.ex-word { color: var(--accent); font-weight: 700; }
+/* 가리기: 글자는 투명하게, 자리는 회색 막대로 남긴다. 카드를 누르면(.peek) 그 카드만 보인다. */
+.words.hide-ja .word-card:not(.peek) .mask[data-part="ja"],
+.words.hide-kana .word-card:not(.peek) .mask[data-part="kana"],
+.words.hide-ko .word-card:not(.peek) .mask[data-part="ko"] {
+  color: transparent; background: var(--line); border-radius: 6px;
+}
+.words.hide-ja .word-card:not(.peek) .mask[data-part="ja"] .ex-word { color: transparent; }
+.hide-bar button { font-size: 13px; }
 .known-toggle {
   align-self: flex-start;
   margin-top: 10px;

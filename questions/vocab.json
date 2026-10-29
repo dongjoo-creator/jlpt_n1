@@ -28,7 +28,7 @@
       { "surface": "長年", "reading": "ながねん", "meaning_ko": "오랜 세월" },
       { "surface": "実を結ぶ", "reading": "みをむすぶ", "meaning_ko": "결실을 보다, 성과가 나다" },
       { "surface": "新薬", "reading": "しんやく", "meaning_ko": "신약" },
-      { "surface": "こぎつける", "reading": "漕ぎ着ける", "meaning_ko": "애써서 겨우 목표에 도달하다" }
+      { "surface": "こぎつける", "reading": "こぎつける", "meaning_ko": "애써서 겨우 목표에 도달하다 (漕ぎ着ける)" }
     ],
     "verified": false
   },
@@ -42,7 +42,7 @@
     "answer": 2,
     "explanation_ko": "「ずさん」은 엉성하고 허술하다는 뜻이고, 「いい加減」이 가장 가까워요. 「大げさ」는 과장된, 「独創的」는 독창적인, 「複雑」는 복잡한이라는 뜻이라 맞지 않아요.",
     "words": [
-      { "surface": "ずさん", "reading": "杜撰", "meaning_ko": "엉성하다, 허술하다" },
+      { "surface": "ずさん", "reading": "ずさん", "meaning_ko": "엉성하다, 허술하다 (杜撰)" },
       { "surface": "いい加減", "reading": "いいかげん", "meaning_ko": "무책임하다, 대충이다" },
       { "surface": "大げさ", "reading": "おおげさ", "meaning_ko": "과장된" },
       { "surface": "独創的", "reading": "どくそうてき", "meaning_ko": "독창적" }
