@@ -27,8 +27,8 @@ function card(daily, key, meta) {
     <div class="meter" aria-hidden="true"><span style="width:${total ? (st.done.length / total) * 100 : 0}%"></span></div>
     ${total ? `<div class="prac-types">${typeChips(st.ids)}</div>` : ''}
     <div class="prac-actions">
-      <button class="btn btn-secondary" data-section="${key}" ${total ? '' : 'disabled'}>오늘 ${total}문제</button>
-      <button class="btn btn-primary" data-section="${key}" data-only="1" ${st.left.length ? '' : 'disabled'}>남은 문제 ${st.left.length}</button>
+      <button class="btn btn-secondary" data-section="${key}" data-from-start="1" ${total ? '' : 'disabled'}>처음부터 보기</button>
+      <button class="btn btn-primary" data-section="${key}" ${total ? '' : 'disabled'}>${st.left.length ? `이어서 풀기 · ${st.left.length}문제 남음` : '다시 풀기'}</button>
     </div>
   </li>`;
 }
@@ -43,7 +43,7 @@ export default {
     </div>`;
     const onClick = (e) => {
       const btn = e.target.closest('button[data-section]');
-      if (btn) startDailySection(btn.dataset.section, { onlyLeft: !!btn.dataset.only, returnTo: 'practice' });
+      if (btn) startDailySection(btn.dataset.section, { fromStart: !!btn.dataset.fromStart, returnTo: 'practice' });
     };
     el.addEventListener('click', onClick);
     return () => el.removeEventListener('click', onClick);

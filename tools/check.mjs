@@ -36,6 +36,7 @@ async function checkQuestions() {
       else if (!Number.isInteger(q.answer) || q.answer < 1 || q.answer > q.choices.length) {
         errors.push(`${at}: answer는 1부터 보기 개수 사이의 정수여야 해요`);
       }
+      if (!q.translation_ko) warnings.push(`${at}: translation_ko(본문 번역)가 없어요`);
       count++;
 
       const text = `${q.passage ?? ''}\n${q.stem ?? ''}`;

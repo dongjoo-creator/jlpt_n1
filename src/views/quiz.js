@@ -49,6 +49,13 @@ function resultHtml(q, picked) {
     : `<div class="result-banner ng">${icons.x}오답이에요 <span>정답은 ${q.answer}번 「${esc(q.choices[q.answer - 1])}」</span></div>`;
 }
 
+// 문제 본문(독해는 지문과 질문) 번역. 용법 문제는 보기 네 문장의 번역이다.
+function transHtml(q) {
+  if (!q.translation_ko) return '';
+  const label = q.type === '용법' ? '보기 번역' : '본문 번역';
+  return `<div class="trans"><p class="trans-label">${label}</p><p class="trans-text">${esc(q.translation_ko)}</p></div>`;
+}
+
 function panelHtml(q, picked, tab) {
   if (picked == null) return '';
   const order = Array.isArray(q.correct_order)
@@ -59,7 +66,7 @@ function panelHtml(q, picked, tab) {
       <button class="tab tab-expl" role="tab" data-tab="expl" aria-selected="${tab === 'expl'}">해설</button>
       <button class="tab tab-words" role="tab" data-tab="words" aria-selected="${tab === 'words'}">어려운 단어<span class="n">${q.words.length}</span></button>
     </div>
-    <div class="pane pane-expl" role="tabpanel"><p class="expl">${esc(q.explanation_ko || '해설이 아직 없어요.')}</p>${order}</div>
+    <div class="pane pane-expl" role="tabpanel"><p class="expl">${esc(q.explanation_ko || '해설이 아직 없어요.')}</p>${order}${transHtml(q)}</div>
     <div class="pane pane-words" role="tabpanel">${wordListHtml(q)}</div>
   </section>`;
 }
@@ -80,6 +87,9 @@ function topHtml(s, label, ratio) {
   </div></header>`;
 }
 
+// 진행 막대는 지금 몇 번째인지가 아니라 몇 문제를 풀었는지를 보여 준다(이전 문제로 돌아가도 줄지 않게).
+const answeredRatio = (s) => s.ids.filter((id) => s.answers[id] != null).length / s.ids.length;
+
 function questionHtml(s, q) {
   const picked = s.answers[q.id];
   const last = s.index === s.ids.length - 1;
@@ -92,7 +102,7 @@ function questionHtml(s, q) {
         <h3>어려운 단어 ${q.words.length}</h3>${wordListHtml(q)}
       </section>
     </section>` : '';
-  return `${topHtml(s, `${s.index + 1} / ${s.ids.length}`, (s.index + (picked != null ? 1 : 0)) / s.ids.length)}
+  return `${topHtml(s, `${s.index + 1} / ${s.ids.length}`, answeredRatio(s))}
     <div class="quiz-body">
       ${left}
       <section class="q-right">
@@ -108,7 +118,8 @@ function questionHtml(s, q) {
       </section>
     </div>
     <div class="word-tip" hidden></div>
-    <footer class="quiz-actions"><div class="bar-inner">
+    <footer class="quiz-actions"><div class="bar-inner has-prev">
+      <button class="btn btn-secondary btn-lg btn-prev" data-act="prev" aria-label="이전 문제" ${s.index === 0 ? 'disabled' : ''}>${icons.chevronLeft}</button>
       <button class="btn btn-secondary btn-lg" data-act="retry" ${picked == null ? 'disabled' : ''}>${icons.refresh}다시 풀기</button>
       <button class="btn btn-primary btn-lg" data-act="next">${last ? '결과 보기' : '다음 문제'}${icons.arrowRight}</button>
     </div></footer>`;
@@ -178,9 +189,8 @@ export default {
     const refresh = (q) => {
       root.querySelector('.q-dyn').innerHTML = dynamicHtml(q, s);
       root.querySelector('[data-act="retry"]').disabled = s.answers[q.id] == null;
-      const picked = s.answers[q.id];
       const bar = root.querySelector('.progress');
-      const ratio = (s.index + (picked != null ? 1 : 0)) / s.ids.length;
+      const ratio = answeredRatio(s);
       bar.firstElementChild.style.width = `${ratio * 100}%`;
       bar.setAttribute('aria-valuenow', Math.round(ratio * 100));
     };
@@ -268,6 +278,12 @@ export default {
           break;
         case 'next':
           s.index += 1;
+          saveSession();
+          draw();
+          break;
+        case 'prev':
+          if (s.index === 0) break;
+          s.index -= 1;
           saveSession();
           draw();
           break;

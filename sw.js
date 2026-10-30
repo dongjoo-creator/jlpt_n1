@@ -2,7 +2,7 @@
 // - 앱 코드(SHELL): 캐시 우선. 코드를 고쳐 배포할 때는 VERSION을 올린다.
 // - 문제(questions/): 네트워크 우선, 실패하면 캐시. 문제만 추가할 때는 VERSION을 안 올려도 된다.
 // - 글꼴(Google Fonts): 한 번 받은 파일을 캐시에 두고 쓴다.
-const VERSION = 'v3';
+const VERSION = 'v4';
 const SHELL = `shell-${VERSION}`;
 const DATA = 'questions';
 const FONTS = 'fonts';

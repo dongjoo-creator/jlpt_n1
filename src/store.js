@@ -7,7 +7,7 @@ const defaultSettings = () => ({ dailyPlan: structuredClone(DAILY_PLAN_DEFAULT) 
 export const state = {
   attempts: new Map(), // 문제 id → { tries, correct, wrong, last, lastAt }
   words: new Map(), // 단어 키 → 단어장 항목
-  daily: new Map(), // 'YYYY-MM-DD' → { count, ids } (ids: 그날의 '오늘의 문제')
+  daily: new Map(), // 'YYYY-MM-DD' → { count, ids, answers } (ids: 그날의 '오늘의 문제')
   settings: defaultSettings(),
   session: null, // 지금 풀고 있는 세트
   persistent: true,
@@ -57,7 +57,8 @@ export function recordAnswer(q, choice) {
 
   const date = todayKey();
   const prev = state.daily.get(date);
-  const d = { ...prev, date, count: (prev?.count ?? 0) + 1 };
+  // answers: 오늘 고른 보기. 오늘 세트를 다시 열 때 푼 자리를 그대로 보여 준다.
+  const d = { ...prev, date, count: (prev?.count ?? 0) + 1, answers: { ...prev?.answers, [q.id]: choice } };
   state.daily.set(date, d);
   save('daily', d);
   return correct;
@@ -107,8 +108,8 @@ export function removeWord(key) {
   remove('words', key);
 }
 
-export function startSession({ title, ids, returnTo = 'home', daily = null }) {
-  state.session = { title, ids, returnTo, daily, index: 0, answers: {}, results: {}, tabs: {}, startedAt: Date.now() };
+export function startSession({ title, ids, returnTo = 'home', daily = null, index = 0, answers = {}, results = {} }) {
+  state.session = { title, ids, returnTo, daily, index, answers, results, tabs: {}, startedAt: Date.now() };
   saveSession();
 }
 

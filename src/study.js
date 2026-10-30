@@ -104,15 +104,33 @@ export function dailySection(set, section) {
   return { ids, done, left: ids.filter((id) => !doneToday(id)), accuracy: done.length ? correct / done.length : null };
 }
 
-export function startDailySection(section, { onlyLeft = false, returnTo = 'home' } = {}) {
-  const set = dailySet();
-  const { ids, done, left } = dailySection(set, section);
-  const picked = onlyLeft ? left : [...left, ...done];
-  if (!picked.length) return toast(ids.length ? '남은 문제가 없어요' : '오늘은 이 영역 문제가 없어요');
-  return startIds(`${SECTIONS[section].label} · 오늘`, picked, returnTo, set.date);
+// 오늘 세트의 문제 목록을 연다. 오늘 고른 답은 미리 채우고, 처음 안 푼 문제에서 시작한다.
+// 그래서 10문제 중 3문제를 풀고 나갔다 오면 "4 / 10"부터 이어진다.
+function openDaily(title, ids, returnTo, date, fromStart = false) {
+  const saved = state.daily.get(date)?.answers ?? {};
+  const answers = {};
+  const results = {};
+  for (const id of ids) {
+    if (saved[id] == null) continue;
+    answers[id] = saved[id];
+    results[id] = saved[id] === questions.get(id).answer;
+  }
+  const first = ids.findIndex((id) => answers[id] == null && !doneToday(id));
+  const index = fromStart || first < 0 ? 0 : first;
+  startSession({ title, ids, returnTo, daily: date, index, answers, results });
+  go('quiz');
 }
 
-// 홈의 큰 버튼: 남은 오늘 문제 → 풀던 세트 이어서 → 오늘 문제 다시 풀기.
+export function startDailySection(section, { fromStart = false, returnTo = 'home' } = {}) {
+  const set = dailySet();
+  const { ids, left } = dailySection(set, section);
+  if (!ids.length) return toast('오늘은 이 영역 문제가 없어요');
+  // 다 푼 영역을 다시 누르면 답을 비운 채 처음부터 복습한다.
+  if (!left.length && !fromStart) return startIds(`${SECTIONS[section].label} · 복습`, ids, returnTo);
+  return openDaily(`${SECTIONS[section].label} · 오늘`, ids, returnTo, set.date, fromStart);
+}
+
+// 홈의 큰 버튼: 남은 오늘 문제 → 풀던 복습 세트 이어서 → 오늘 문제 다시 풀기.
 export function mainAction(set = dailySet()) {
   const left = set.ids.filter((id) => !doneToday(id));
   const s = openSession();
@@ -120,14 +138,14 @@ export function mainAction(set = dailySet()) {
     return {
       title: set.done ? '오늘의 문제 이어서 풀기' : '오늘의 문제 풀기',
       left,
-      run: () => (s?.daily === set.date ? go('quiz') : startIds('오늘의 문제', left, 'home', set.date)),
+      run: () => openDaily('오늘의 문제', set.ids, 'home', set.date),
     };
   }
-  if (s) return { title: '이어서 풀기', sub: `${s.title} ${s.index + 1}/${s.ids.length}`, run: () => go('quiz') };
+  if (s && !s.daily) return { title: '이어서 풀기', sub: `${s.title} ${s.index + 1}/${s.ids.length}`, run: () => go('quiz') };
   return {
     title: '오늘 문제 다시 풀기',
     sub: set.total ? `오늘 목표 달성 · ${set.total}문제` : '아직 문제가 없어요',
-    run: () => (set.total ? startIds('오늘의 문제 복습', set.ids, 'home', set.date) : toast('아직 문제가 없어요')),
+    run: () => (set.total ? startIds('오늘의 문제 복습', set.ids, 'home') : toast('아직 문제가 없어요')),
   };
 }
 
